@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bank DApp (Infura) - 66049472 วรากร มาตุเรศ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center p-4">
+  <div class="max-w-lg w-full bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6">
+    
+    <!-- ส่วนแสดงข้อมูลประจำตัวนักศึกษา -->
+    <header class="border-b border-slate-800 pb-4 text-center space-y-1">
+      <h1 class="text-2xl font-bold tracking-tight text-sky-400">Bank DApp System</h1>
+      <p class="text-slate-200 font-medium">นายวรากร มาตุเรศ</p>
+      <p class="text-slate-400 text-sm">รหัสนักศึกษา: 66049472</p>
+      <div class="pt-1 space-y-0.5">
+        <span class="block text-[11px] font-mono text-slate-500 break-all">
+          Contract: 0x2c8ffCF0bDc71b29697dB78679B89E2cE1a4cD0e
+        </span>
+        <span class="block text-[11px] font-mono text-amber-500/80">
+          Provider: Infura RPC (Sepolia)
+        </span>
+      </div>
+    </header>
+
+    <!-- ส่วนเชื่อมต่อบัญชีผ่าน Infura Wallet (Private Key) -->
+    <div class="space-y-3 bg-slate-950/60 p-4 rounded-xl border border-slate-800">
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium text-slate-300">บัญชีผู้ใช้งาน (Infura Signer)</span>
+        <span id="networkBadge" class="text-[11px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/50">
+          Infura Ready
+        </span>
+      </div>
+      
+      <div class="flex gap-2">
+        <input 
+          id="privateKeyInput" 
+          type="password" 
+          placeholder="กรอก Private Key (0x...) สำหรับทำธุรกรรม" 
+          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500" 
+        />
+        <button id="connectBtn" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 active:scale-95 text-white rounded-lg font-medium text-xs transition duration-150 shrink-0">
+          โหลดกระเป๋า
+        </button>
+      </div>
+
+      <div id="accountDisplay" class="text-xs font-mono bg-slate-950 p-2.5 rounded-lg border border-slate-800 break-all text-slate-400">
+        สถานะ: โหมดอ่านข้อมูลผ่าน Infura (ยังไม่ได้ระบุ Private Key)
+      </div>
+    </div>
+
+    <!-- ยอดเงินฝากในระบบธนาคาร (CheckBlance) -->
+    <div class="bg-slate-950/80 p-5 rounded-xl border border-slate-800 space-y-3">
+      <div class="flex justify-between items-center">
+        <span class="text-sm text-slate-400">ยอดเงินคงเหลือในธนาคาร</span>
+        <button id="checkBalanceBtn" class="text-xs bg-slate-800 hover:bg-slate-700 active:scale-95 px-3 py-1.5 rounded-md text-sky-300 transition duration-150">
+          ตรวจสอบยอด (Check Balance)
+        </button>
+      </div>
+      <p id="balanceDisplay" class="text-3xl font-extrabold text-emerald-400">
+        0.00 <span class="text-sm text-slate-400 font-normal">ETH</span>
+      </p>
+    </div>
+
+    <!-- ทำรายการฝากเงิน (Deposit) -->
+    <div class="space-y-2">
+      <label for="depositAmount" class="block text-sm font-medium text-slate-300">ฝากเงิน (Deposit)</label>
+      <div class="flex gap-2">
+        <input 
+          id="depositAmount" 
+          type="number" 
+          step="0.0001" 
+          placeholder="ระบุจำนวน ETH เช่น 0.01" 
+          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500" 
+        />
+        <button id="depositBtn" class="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-medium px-5 py-2 rounded-lg text-sm transition duration-150 shrink-0">
+          Deposit
+        </button>
+      </div>
+    </div>
+
+    <!-- ทำรายการถอนเงิน (Withdraw) -->
+    <div class="space-y-2">
+      <label for="withdrawAmount" class="block text-sm font-medium text-slate-300">ถอนเงิน (Withdraw)</label>
+      <div class="flex gap-2">
+        <input 
+          id="withdrawAmount" 
+          type="number" 
+          step="0.0001" 
+          placeholder="ระบุจำนวน ETH เช่น 0.005" 
+          class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500" 
+        />
+        <button id="withdrawBtn" class="bg-rose-600 hover:bg-rose-500 active:scale-95 text-white font-medium px-5 py-2 rounded-lg text-sm transition duration-150 shrink-0">
+          Withdraw
+        </button>
+      </div>
+    </div>
+
+    <!-- กล่องแสดงสถานะการทำธุรกรรม -->
+    <div id="statusBox" class="text-xs text-center p-2.5 rounded-lg border border-transparent min-h-[2.5rem] flex items-center justify-center font-mono">
+      เชื่อมต่อ Infura RPC สำเร็จ พร้อมใช้งาน
+    </div>
+  </div>
+
+  <script>
+    // กำหนดค่า Infura RPC URL (Sepolia Testnet)
+    const INFURA_API_KEY = "e8003cff385f46948e54ec16266884bb";
+    const INFURA_RPC_URL = `https://sepolia.infura.io/v3/${INFURA_API_KEY}`;
+    const CONTRACT_ADDRESS = "0x2c8ffCF0bDc71b29697dB78679B89E2cE1a4cD0e";
+
+    const CONTRACT_ABI = [
+      "function deposit() public payable",
+      "function withdraw(uint amount) public",
+      "function checkBlance() public view returns (uint balance)",
+      "event Deposit(address indexed owner, uint amount)",
+      "event Withdraw(address indexed owner, uint amount)"
+    ];
+
+    // สร้าง Infura Provider ทันทีโดยไม่ต้องพึ่งพา MetaMask
+    const infuraProvider = new ethers.providers.JsonRpcProvider(INFURA_RPC_URL);
+    let walletSigner = null;
+    // เริ่มต้น Contract ในโหมด Read-Only ผ่าน Infura Provider
+    let bankContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, infuraProvider);
+
+    const privateKeyInput = document.getElementById("privateKeyInput");
+    const connectBtn = document.getElementById("connectBtn");
+    const accountDisplay = document.getElementById("accountDisplay");
+    const balanceDisplay = document.getElementById("balanceDisplay");
+    const checkBalanceBtn = document.getElementById("checkBalanceBtn");
+    const depositBtn = document.getElementById("depositBtn");
+    const withdrawBtn = document.getElementById("withdrawBtn");
+    const depositAmountInput = document.getElementById("depositAmount");
+    const withdrawAmountInput = document.getElementById("withdrawAmount");
+    const statusBox = document.getElementById("statusBox");
+
+    function updateStatus(message, type = "info") {
+      statusBox.textContent = message;
+      if (type === "error") {
+        statusBox.className = "text-xs text-center p-2.5 rounded-lg border border-rose-800/50 bg-rose-950/40 text-rose-400 min-h-[2.5rem] flex items-center justify-center font-mono break-all";
+      } else if (type === "success") {
+        statusBox.className = "text-xs text-center p-2.5 rounded-lg border border-emerald-800/50 bg-emerald-950/40 text-emerald-400 min-h-[2.5rem] flex items-center justify-center font-mono";
+      } else {
+        statusBox.className = "text-xs text-center p-2.5 rounded-lg border border-slate-800 bg-slate-950 text-slate-400 min-h-[2.5rem] flex items-center justify-center font-mono";
+      }
+    }
+
+    // โหลด Wallet จาก Private Key เพื่อผูกกับ Infura Provider
+    async function loadInfuraWallet() {
+      const rawKey = privateKeyInput.value.trim();
+      if (!rawKey) {
+        updateStatus("กรุณากรอก Private Key ของกระเป๋า Testnet", "error");
+        return;
+      }
+
+      try {
+        updateStatus("กำลังสร้าง Wallet และเชื่อมต่อกับ Infura...");
+        const formattedKey = rawKey.startsWith("0x") ? rawKey : `0x${rawKey}`;
+        
+        // สร้าง Signer ที่ผูกกับ Infura Provider โดยตรง
+        walletSigner = new ethers.Wallet(formattedKey, infuraProvider);
+        const userAddress = await walletSigner.getAddress();
+
+        // อัปเดต Contract Instance ให้ใช้ walletSigner ในการเซ็นธุรกรรม
+        bankContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, walletSigner);
+
+        accountDisplay.textContent = `บัญชีที่เชื่อมต่อ: ${userAddress}`;
+        accountDisplay.classList.replace("text-slate-400", "text-sky-300");
+        
+        updateStatus("โหลดบัญชีผ่าน Infura สำเร็จ", "success");
+        await fetchBalance();
+      } catch (err) {
+        updateStatus(`Private Key ไม่ถูกต้อง: ${err.message}`, "error");
+      }
+    }
+
+    async function fetchBalance() {
+      try {
+        updateStatus("กำลังอ่านยอดเงินผ่าน Infura Node...");
+        // หมายเหตุ: หาก checkBlance() ใน Smart Contract อ้างอิง msg.sender 
+        // จำเป็นต้องเรียกผ่าน walletSigner เพื่อให้ msg.sender ตรงกับบัญชีผู้ใช้
+        const balanceWei = await bankContract.checkBlance();
+        const balanceEth = ethers.utils.formatEther(balanceWei);
+        balanceDisplay.innerHTML = `${balanceEth} <span class="text-sm text-slate-400 font-normal">ETH</span>`;
+        updateStatus("อัปเดตยอดเงินจาก Infura เรียบร้อย", "success");
+      } catch (err) {
+        updateStatus(`ตรวจสอบยอดเงินไม่สำเร็จ: ${err.reason || err.message}`, "error");
+      }
+    }
+
+    async function handleDeposit() {
+      if (!walletSigner) {
+        updateStatus("กรุณากรอก Private Key และกด 'โหลดกระเป๋า' ก่อนฝากเงิน", "error");
+        return;
+      }
+      const ethValue = depositAmountInput.value.trim();
+      if (!ethValue || parseFloat(ethValue) <= 0) {
+        updateStatus("กรุณากรอกจำนวน ETH ที่ต้องการฝากให้ถูกต้อง", "error");
+        return;
+      }
+
+      try {
+        updateStatus("กำลังเซ็นและส่งธุรกรรมฝากเงินไปยัง Infura...");
+        const weiValue = ethers.utils.parseEther(ethValue);
+        const tx = await bankContract.deposit({ value: weiValue });
+        
+        updateStatus(`กำลังรอการยืนยันบนบล็อกเชน (Tx: ${tx.hash.substring(0, 10)}...)...`);
+        await tx.wait();
+
+        updateStatus(`ฝากเงิน ${ethValue} ETH ผ่าน Infura สำเร็จ!`, "success");
+        depositAmountInput.value = "";
+        await fetchBalance();
+      } catch (err) {
+        updateStatus(`การฝากเงินล้มเหลว: ${err.reason || err.message}`, "error");
+      }
+    }
+
+    async function handleWithdraw() {
+      if (!walletSigner) {
+        updateStatus("กรุณากรอก Private Key และกด 'โหลดกระเป๋า' ก่อนถอนเงิน", "error");
+        return;
+      }
+      const ethValue = withdrawAmountInput.value.trim();
+      if (!ethValue || parseFloat(ethValue) <= 0) {
+        updateStatus("กรุณากรอกจำนวน ETH ที่ต้องการถอนให้ถูกต้อง", "error");
+        return;
+      }
+
+      try {
+        updateStatus("กำลังเซ็นและส่งธุรกรรมถอนเงินไปยัง Infura...");
+        const weiValue = ethers.utils.parseEther(ethValue);
+        const tx = await bankContract.withdraw(weiValue);
+
+        updateStatus(`กำลังรอการยืนยันบนบล็อกเชน (Tx: ${tx.hash.substring(0, 10)}...)...`);
+        await tx.wait();
+
+        updateStatus(`ถอนเงิน ${ethValue} ETH ผ่าน Infura สำเร็จ!`, "success");
+        withdrawAmountInput.value = "";
+        await fetchBalance();
+      } catch (err) {
+        updateStatus(`การถอนเงินล้มเหลว: ${err.reason || err.message}`, "error");
+      }
+    }
+
+    connectBtn.addEventListener("click", loadInfuraWallet);
+    checkBalanceBtn.addEventListener("click", fetchBalance);
+    depositBtn.addEventListener("click", handleDeposit);
+    withdrawBtn.addEventListener("click", handleWithdraw);
+
+    // ตรวจสอบการเชื่อมต่อ Infura ทันทีที่เปิดหน้าเว็บ
+    infuraProvider.getNetwork()
+      .then((net) => {
+        updateStatus(`เชื่อมต่อ Infura (${net.name}) สำเร็จ`, "success");
+      })
+      .catch((err) => {
+        updateStatus(`ไม่สามารถเชื่อมต่อ Infura RPC ได้: ${err.message}`, "error");
+      });
+  </script>
+</body>
+</html>
